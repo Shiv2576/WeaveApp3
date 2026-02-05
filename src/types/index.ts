@@ -34,9 +34,7 @@ export interface PdfItem {
   name: string;
   uri: string;
   size: string;
-  rawSize: number;
   date: string;
-  modificationTime: number;
 }
 
 export interface PdfToRename {

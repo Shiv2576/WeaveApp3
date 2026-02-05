@@ -1,18 +1,26 @@
-import React from "react";
+// Editor.tsx (Updated)
+import React, { useState } from "react";
 import { View, Text, Alert, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useImageManagement } from "../hooks/useImageManagement";
 import { useImagePicker } from "../hooks/imagePicker";
+import { usePdfManagement } from "../hooks/usePdfManagement";
 import AddImageButton from "../components/editor/AddImageButton";
 import GeneratePdfButton from "../components/editor/GenerateButton";
 import ImageGrid from "../components/editor/ImageGrid";
+import RenameModal from "../components/modals/RenamePdfModal";
 
 interface EditorProps {
-  onGeneratePdf?: (pdfPath: string) => void; // Optional callback for when PDF is generated
+  onGeneratePdf?: (pdfPath: string) => void;
   onClearImages?: () => void;
+  onSwitchToGallery?: () => void;
 }
 
-const Editor: React.FC<EditorProps> = ({ onGeneratePdf, onClearImages }) => {
+const Editor: React.FC<EditorProps> = ({
+  onGeneratePdf,
+  onClearImages,
+  onSwitchToGallery,
+}) => {
   const {
     images,
     loading: imagesLoading,
@@ -21,7 +29,6 @@ const Editor: React.FC<EditorProps> = ({ onGeneratePdf, onClearImages }) => {
     removeImage,
     clearAllImages,
     rotateImage,
-    generatePdf: generatePdfFromHook, // Get generatePdf from hook
     getImageCount,
     hasImages,
   } = useImageManagement();
@@ -31,6 +38,86 @@ const Editor: React.FC<EditorProps> = ({ onGeneratePdf, onClearImages }) => {
     pickImages,
     setImages: clearPickedImages,
   } = useImagePicker();
+
+  const {
+    generateAndSavePdf,
+    loadPdfs,
+    pdfToRename,
+    setPdfToRename,
+    renaming,
+    discardPdf,
+    handleRenamePdf,
+  } = usePdfManagement();
+
+  // ✅ State for modal visibility
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+
+  const handleGeneratePdf = async () => {
+    try {
+      // 1. Generate PDF
+      const pdfPath = await generateAndSavePdf(
+        images,
+        `document_${new Date().toISOString().slice(0, 10)}.pdf`,
+      );
+
+      // 2. Show rename modal for user to confirm/change name
+      setPdfToRename({
+        uri: pdfPath.uri,
+        currentName: pdfPath.name,
+        newName: pdfPath.name,
+      });
+
+      setRenameModalVisible(true);
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
+  const handleRenamePdfFromModal = async () => {
+    try {
+      await handleRenamePdf(pdfToRename?.newName || "document.pdf");
+
+      // Close modal
+      setRenameModalVisible(false);
+      setPdfToRename(null);
+
+      // Load PDFs so gallery shows it
+      await loadPdfs();
+
+      // Show success and switch to gallery
+      Alert.alert("Success", "PDF saved successfully!", [
+        {
+          text: "View in Gallery",
+          onPress: () => onSwitchToGallery?.(),
+        },
+        { text: "OK", style: "default" },
+      ]);
+
+      // Clear images
+      clearAllImages();
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
+  const handleDiscardFromModal = () => {
+    Alert.alert(
+      "Discard PDF",
+      "Are you sure you want to discard this PDF without saving?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Discard",
+          style: "destructive",
+          onPress: () => {
+            discardPdf();
+            setRenameModalVisible(false);
+            setPdfToRename(null);
+          },
+        },
+      ],
+    );
+  };
 
   const handleAddImages = async () => {
     try {
@@ -51,25 +138,6 @@ const Editor: React.FC<EditorProps> = ({ onGeneratePdf, onClearImages }) => {
       }
     } catch (error) {
       Alert.alert("Error", "Failed to pick images");
-    }
-  };
-
-  const handleGenerate = async () => {
-    if (!hasImages()) {
-      Alert.alert("No Images", "Please add at least one image");
-      return;
-    }
-
-    try {
-      // Use generatePdf from the hook
-      const pdfPath = await generatePdfFromHook(); // Optional: pass pdfName parameter
-
-      // Optional: Call the callback with the generated PDF path
-      onGeneratePdf?.(pdfPath);
-
-      Alert.alert("Success", "PDF generated successfully!");
-    } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to generate PDF");
     }
   };
 
@@ -101,7 +169,7 @@ const Editor: React.FC<EditorProps> = ({ onGeneratePdf, onClearImages }) => {
     removeImage(id);
   };
 
-  const isLoading = imagesLoading || generatingPdf; // Include generatingPdf in loading state
+  const isLoading = imagesLoading || generatingPdf;
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F3F4F4" }}>
@@ -239,12 +307,28 @@ const Editor: React.FC<EditorProps> = ({ onGeneratePdf, onClearImages }) => {
         }}
       >
         <GeneratePdfButton
-          onPress={handleGenerate}
+          onPress={handleGeneratePdf}
           disabled={!hasImages() || isLoading}
           loading={isLoading}
           imageCount={getImageCount()}
         />
       </View>
+
+      <RenameModal
+        visible={renameModalVisible}
+        onClose={() => {
+          if (!renaming) {
+            setRenameModalVisible(false);
+            setPdfToRename(null);
+          }
+        }}
+        renamePdf={handleRenamePdfFromModal}
+        pdfToRename={pdfToRename}
+        setPdfToRename={setPdfToRename}
+        images={images}
+        renaming={renaming}
+        onDiscard={handleDiscardFromModal}
+      />
     </View>
   );
 };

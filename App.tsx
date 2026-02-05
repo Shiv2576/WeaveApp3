@@ -1,92 +1,82 @@
-import React, { useState } from "react";
-import { View } from "react-native";
-import Editor from "./src/screens/EditorScreen";
-import GalleryScreen from "./src/screens/GalleryScreen";
-import Header from "./src/components/shared/Header";
+import React, { useEffect } from "react";
+import { View, StyleSheet, StatusBar, Platform } from "react-native";
+import { useTabNavigation } from "./src/hooks/useTabNavigation";
+import { usePdfManagement } from "./src/hooks/usePdfManagement";
 import { TabNavigation } from "./src/components/shared/TabNavigation";
-import { ImageItem, PdfItem } from "./src/types";
+import Editor from "./src/screens/EditorScreen";
+import Gallery from "./src/screens/GalleryScreen";
+import { TabType } from "./src/types";
 
-type AppTab = "editor" | "gallery";
+const App: React.FC = () => {
+  const { currentTab, switchTab } = useTabNavigation("editor");
+  const { loadPdfs } = usePdfManagement();
 
-function App() {
-  // State for current tab
-  const [currentTab, setCurrentTab] = useState<AppTab>("editor");
+  useEffect(() => {
+    loadPdfs();
+  }, [loadPdfs]);
 
-  // Handle tab change
-  const handleTabChange = (tab: AppTab) => {
-    setCurrentTab(tab);
-  };
-
-  // Editor handlers
-  const handleGeneratePdf = async (pdfPath: string) => {
-    // Optional: You can handle the generated PDF path here
-    console.log("PDF generated at:", pdfPath);
-    // You might want to switch to gallery tab or refresh gallery
-    // handleTabChange("gallery");
-  };
-
-  const handleClearImages = () => {
-    // To be implemented by parent component
-    console.log("Images cleared");
-  };
-
-  // Gallery handlers - these will be implemented by the parent
-  const handleAddPdf = () => {
-    // To be implemented by parent component
-  };
-
-  const handleSearch = () => {
-    // To be implemented by parent component
-  };
-
-  const handleOpenPdf = (pdf: PdfItem) => {
-    // To be implemented by parent component
-  };
-
-  const handleSharePdf = (pdf: PdfItem) => {
-    // To be implemented by parent component
-  };
-
-  const handleDeletePdf = (pdf: PdfItem) => {
-    // To be implemented by parent component
+  const handleSwitchToGallery = async () => {
+    switchTab("gallery");
+    await loadPdfs();
   };
 
   const handleSwitchToEditor = () => {
-    setCurrentTab("editor");
-  };
-
-  const handleRefresh = () => {
-    // To be implemented by parent component
+    switchTab("editor");
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* Header */}
-      <Header title="Weave" showStatusBar={true} />
+    <View style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#FFFFFF"
+        translucent={false}
+      />
 
-      {/* Tab Navigation */}
-      <TabNavigation currentTab={currentTab} onTabChange={handleTabChange} />
+      <View style={styles.contentWrapper}>
+        <TabNavigation
+          currentTab={currentTab}
+          onTabChange={(tab: TabType) => {
+            if (tab === "gallery") {
+              handleSwitchToGallery();
+            } else {
+              handleSwitchToEditor();
+            }
+          }}
+        />
 
-      {/* Content based on current tab */}
-      {currentTab === "editor" ? (
-        <Editor
-          onGeneratePdf={handleGeneratePdf} // Now accepts string, not ImageItem[]
-          onClearImages={handleClearImages}
-        />
-      ) : (
-        <GalleryScreen
-          pdfs={[]} // PDFs will be passed from parent
-          onAddPdf={handleAddPdf}
-          onSearch={handleSearch}
-          onOpenPdf={handleOpenPdf}
-          onSharePdf={handleSharePdf}
-          onDeletePdf={handleDeletePdf}
-          onSwitchToEditor={handleSwitchToEditor}
-          onRefresh={handleRefresh}
-        />
-      )}
+        <View style={styles.content}>
+          {currentTab === "editor" ? (
+            <Editor
+              onGeneratePdf={(pdfPath: string) => {
+                console.log("PDF Generated:", pdfPath);
+              }}
+              onClearImages={() => {
+                console.log("Images cleared");
+              }}
+              onSwitchToGallery={handleSwitchToGallery}
+            />
+          ) : (
+            <Gallery onSwitchToEditor={handleSwitchToEditor} />
+          )}
+        </View>
+      </View>
     </View>
   );
-}
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: "#F3F4F4",
+  },
+  content: {
+    flex: 1,
+  },
+});
 
 export default App;

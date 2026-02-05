@@ -13,9 +13,9 @@ import PdfCard from "./PdfCard";
 
 interface PdfGridProps {
   pdfs: PdfItem[];
-  onOpenPdf: (pdf: PdfItem) => void; // Changed from (uri: string, name: string)
-  onSharePdf: (pdf: PdfItem) => void; // Changed from (uri: string, name: string)
-  onDeletePdf: (pdf: PdfItem) => void; // Changed from (uri: string, name: string)
+  onOpenPdf: (pdf: PdfItem) => void;
+  onSharePdf: (pdf: PdfItem) => void;
+  onDeletePdf: (pdf: PdfItem) => void;
   onSwitchToEditor?: () => void;
   emptyMessage?: string;
   emptySubtitle?: string;

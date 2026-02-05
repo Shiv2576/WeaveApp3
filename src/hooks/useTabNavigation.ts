@@ -1,12 +1,25 @@
+import { useState, useCallback } from "react";
 import { TabType } from "../types";
-import { useState } from "react";
 
-export const useTabNavigation = (initialTab = "editor") => {
-  const [currentTab, setCurrentTab] = useState(initialTab);
+export const useTabNavigation = (initialTab: TabType = "editor") => {
+  const [currentTab, setCurrentTab] = useState<TabType>(initialTab);
 
-  const switchToEditor = () => setCurrentTab("editor");
-  const switchToGallery = () => setCurrentTab("gallery");
-  const switchTab = (tab: TabType) => setCurrentTab(tab);
+  const switchToEditor = useCallback(() => {
+    setCurrentTab("editor");
+  }, []);
 
-  return { currentTab, switchToEditor, switchToGallery, switchTab };
+  const switchToGallery = useCallback(() => {
+    setCurrentTab("gallery");
+  }, []);
+
+  const switchTab = useCallback((tab: TabType) => {
+    setCurrentTab(tab);
+  }, []);
+
+  return {
+    currentTab,
+    switchToEditor,
+    switchToGallery,
+    switchTab,
+  };
 };

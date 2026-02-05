@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ImageItem } from "../types";
 import { rotateImage } from "../services/imageService";
-import { generatePdf } from "../services/pdfService";
 
 export const useImageManagement = () => {
   const [images, setImages] = useState<ImageItem[]>([]);
@@ -45,22 +44,6 @@ export const useImageManagement = () => {
     }
   };
 
-  // PDF generation function
-  const generatePdfHandler = async (pdfName?: string): Promise<string> => {
-    setGeneratingPdf(true);
-    try {
-      // Since EditedImage extends ImageItem, we can pass images directly
-      // TypeScript will accept ImageItem[] where EditedImage[] is expected
-      const pdfPath = await generatePdf(images, pdfName);
-      return pdfPath;
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      throw error;
-    } finally {
-      setGeneratingPdf(false);
-    }
-  };
-
   return {
     images,
     loading,
@@ -70,7 +53,6 @@ export const useImageManagement = () => {
     removeImage,
     clearAllImages,
     rotateImage: rotateImageHandler,
-    generatePdf: generatePdfHandler, // Exported PDF generation function
     getImageCount: () => images.length,
     hasImages: () => images.length > 0,
   };

@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Theme from "../../styles/themeConstants";
 
@@ -7,20 +13,18 @@ interface GalleryHeaderProps {
   title?: string;
   subtitle?: string;
   count?: number;
-  showActions?: boolean;
-  onAdd?: () => void;
-  onSearch?: () => void;
+  onRefresh?: () => void;
   loading?: boolean;
+  refreshing?: boolean;
 }
 
 const GalleryHeader: React.FC<GalleryHeaderProps> = ({
   title = "Gallery",
   subtitle = "Your documents",
   count = 0,
-  showActions = true,
-  onAdd,
-  onSearch,
+  onRefresh,
   loading = false,
+  refreshing = false,
 }) => {
   return (
     <View style={styles.container}>
@@ -30,42 +34,35 @@ const GalleryHeader: React.FC<GalleryHeaderProps> = ({
         {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
       </View>
 
-      {/* Right side: Count and actions */}
+      {/* Right side: Count and refresh button */}
       <View style={styles.rightSection}>
-        {/* Count badge */}
+        {/* Count badge - only show if count > 0 */}
         {count > 0 && (
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{count}</Text>
           </View>
         )}
 
-        {/* Action buttons */}
-        {showActions && (
-          <View style={styles.actions}>
-            {onSearch && (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={onSearch}
-                disabled={loading}
-              >
-                <Ionicons
-                  name="search"
-                  size={22}
-                  color={Theme.Colors.primary}
-                />
-              </TouchableOpacity>
+        {/* Refresh Button */}
+        {onRefresh && (
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              (loading || refreshing) && styles.actionButtonDisabled,
+            ]}
+            onPress={onRefresh}
+            disabled={loading || refreshing}
+          >
+            {refreshing ? (
+              <ActivityIndicator size="small" color={Theme.Colors.primary} />
+            ) : (
+              <Ionicons
+                name="refresh"
+                size={20}
+                color={loading ? Theme.Colors.textMuted : Theme.Colors.primary}
+              />
             )}
-
-            {onAdd && (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={onAdd}
-                disabled={loading}
-              >
-                <Ionicons name="add" size={22} color={Theme.Colors.primary} />
-              </TouchableOpacity>
-            )}
-          </View>
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -108,16 +105,12 @@ const styles = StyleSheet.create({
     borderRadius: Theme.Spacing.borderRadiusRound,
     minWidth: 28,
     alignItems: "center",
+    justifyContent: "center",
   },
   countText: {
     color: Theme.Colors.textLight,
     fontSize: Theme.Typography.fontSize.sm,
     fontWeight: Theme.Typography.fontWeight.bold,
-  },
-  actions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Theme.Spacing.xs,
   },
   actionButton: {
     width: 40,
@@ -128,6 +121,10 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.Colors.background,
     borderWidth: 1,
     borderColor: Theme.Colors.border,
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
+    borderColor: Theme.Colors.borderLight,
   },
 });
 

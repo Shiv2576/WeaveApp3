@@ -1,86 +1,111 @@
-import React from "react";
-import { View, Text, Alert, ActivityIndicator } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+// GalleryScreen.tsx (COMPLETE)
+import React, { useEffect } from "react";
+import { View, Alert, StyleSheet } from "react-native";
+import { usePdfManagement } from "../hooks/usePdfManagement";
 import GalleryHeader from "../components/gallery/GalleryHeader";
-import PdfGrid from "../components/gallery/PdfList";
+import PdfList from "../components/gallery/PdfList";
+import EmptyState from "../components/shared/EmptyState";
+import SPACING from "../styles/themeConstants";
 import { PdfItem } from "../types";
-import usePdfManagement from "../hooks/usePdfManagement";
 
 interface GalleryScreenProps {
-  pdfs: PdfItem[];
-  loading?: boolean;
-  onAddPdf?: () => void;
-  onSearch?: () => void;
-  onOpenPdf?: (pdf: PdfItem) => void;
-  onSharePdf?: (pdf: PdfItem) => void;
-  onDeletePdf?: (pdf: PdfItem) => void;
-  onSwitchToEditor?: () => void;
-  onRefresh?: () => void;
-  showDebugInfo?: boolean;
+  onSwitchToEditor: () => void;
 }
 
-const GalleryScreen: React.FC<GalleryScreenProps> = ({
-  pdfs = [],
-  loading = false,
-  onAddPdf,
-  onSearch,
-  onOpenPdf,
-  onSharePdf,
-  onDeletePdf,
-  onSwitchToEditor,
-  onRefresh,
-  showDebugInfo = false,
-}) => {
-  const handleOpenPdf = (pdf: PdfItem) => {
-    onOpenPdf?.(pdf);
-  };
+const Gallery: React.FC<GalleryScreenProps> = ({ onSwitchToEditor }) => {
+  const { pdfs, loadPdfs, handleOpenPdf, handleSharePdf, handleDeletePdf } =
+    usePdfManagement();
 
-  const handleSharePdf = (pdf: PdfItem) => {
-    onSharePdf?.(pdf);
-  };
+  useEffect(() => {
+    loadPdfs();
+  });
 
-  const handleDeletePdf = (pdf: PdfItem) => {
+  const handleDelete = (pdfUri: string, fileName: string) => {
     Alert.alert(
       "Delete PDF",
-      `Are you sure you want to delete "${pdf.name}"?`,
+      `Are you sure you want to delete "${fileName}"?`,
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => onDeletePdf?.(pdf),
+          onPress: async () => {
+            try {
+              await handleDeletePdf(pdfUri, fileName);
+              loadPdfs(); // ✅ Reload after delete
+              Alert.alert("Success", "PDF deleted successfully");
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to delete PDF");
+            }
+          },
         },
       ],
     );
   };
 
-  const handleSwitchToEditor = () => {
-    onSwitchToEditor?.();
+  const handleOpen = async (pdfUri: string, fileName: string) => {
+    try {
+      await handleOpenPdf(pdfUri, fileName);
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to open PDF");
+    }
+  };
+
+  const handleShare = async (pdfUri: string, fileName: string) => {
+    try {
+      await handleSharePdf(pdfUri, fileName);
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to share PDF");
+    }
+  };
+
+  const handlePdfOpen = async (pdf: PdfItem) => {
+    await handleOpenPdf(pdf.uri, pdf.name);
+  };
+
+  const handlePdfShare = async (pdf: PdfItem) => {
+    await handleSharePdf(pdf.uri, pdf.name);
+  };
+
+  // Delete
+  const handlePdfDelete = async (pdf: PdfItem) => {
+    await handleDeletePdf(pdf.uri, pdf.name);
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F3F4F4" }}>
+    <View style={styles.container}>
       <GalleryHeader
         title="Gallery"
-        subtitle="Your documents"
+        subtitle="Your generated PDFs"
         count={pdfs.length}
-        onAdd={onAddPdf}
-        onSearch={onSearch}
-        showActions={true}
-        loading={loading}
+        onRefresh={loadPdfs}
       />
 
-      <PdfGrid
-        pdfs={pdfs}
-        onOpenPdf={handleOpenPdf}
-        onSharePdf={handleSharePdf}
-        onDeletePdf={handleDeletePdf}
-        onSwitchToEditor={handleSwitchToEditor}
-        loading={loading}
-        showDebugInfo={showDebugInfo}
-      />
+      {pdfs.length > 0 ? (
+        <PdfList
+          pdfs={pdfs}
+          onOpenPdf={handlePdfOpen}
+          onSharePdf={handlePdfShare}
+          onDeletePdf={handlePdfDelete}
+        />
+      ) : (
+        <EmptyState
+          icon="document-outline"
+          title="No PDFs Yet"
+          subtitle={`Generate your first PDF in the Editor tab\nYour PDFs will appear here automatically`}
+          actionText="Go to Editor"
+          onAction={onSwitchToEditor}
+        />
+      )}
     </View>
   );
 };
 
-export default GalleryScreen;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: SPACING.Spacing.xl,
+  },
+});
+
+export default Gallery;
