@@ -182,26 +182,6 @@ const Editor: React.FC<EditorProps> = ({
           paddingBottom: 16,
         }}
       >
-        <Text
-          style={{
-            fontSize: 28,
-            fontWeight: "bold",
-            color: "#061E29",
-            marginBottom: 4,
-          }}
-        >
-          Editor
-        </Text>
-        <Text
-          style={{
-            fontSize: 14,
-            color: "#8B9599",
-            marginBottom: 16,
-          }}
-        >
-          Add and edit images
-        </Text>
-
         <View
           style={{
             flexDirection: "row",

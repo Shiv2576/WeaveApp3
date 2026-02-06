@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { Alert } from "react-native";
-import * as FileSystem from "expo-file-system";
+import { File, Directory, Paths } from "expo-file-system";
 import { PdfItem, PdfToRename } from "../types";
 import {
   sharePdf,
@@ -20,31 +20,23 @@ const formatFileSize = (bytes: number): string => {
   return `${(bytes / 1048576).toFixed(1)} MB`;
 };
 
-// Helper to get file info with size
+// Helper to get file info with size using new API
 const getFileInfoWithSize = async (
   fileUri: string,
 ): Promise<{ size: number; modificationTime: number }> => {
   try {
-    // Get basic file info
-    const fileInfo = await FileSystem.getInfoAsync(fileUri);
+    const file = new File(fileUri);
 
-    if (!fileInfo.exists) {
+    // Check if file exists
+    if (!file.exists) {
       return { size: 0, modificationTime: Date.now() };
     }
 
-    // Get approximate size using download (most reliable)
-    let size = 0;
-    try {
-      const result = await FileSystem.getInfoAsync(fileUri, { size: true });
-      // @ts-ignore - size might be available
-      size = result.size || 0;
-    } catch (sizeError) {
-      console.log("Could not get exact size, using default:", sizeError);
-      size = 1024; // Default 1KB for PDFs
-    }
+    // Get file info using the new API
+    const fileInfo = await file.info();
 
     return {
-      size,
+      size: fileInfo.size || 0,
       modificationTime: fileInfo.modificationTime || Date.now(),
     };
   } catch (error) {
@@ -142,41 +134,37 @@ export const usePdfManagement = () => {
       const timestamp = Date.now();
       const fileName = pdfName || `document_${timestamp}.pdf`;
 
-      // Copy to app's document directory
-      const documentsDir = FileSystem.Directory;
-      const newPath = `${documentsDir}${fileName}`;
+      // Create the source file object
+      const sourceFile = new File(pdfPath);
+
+      // Get the document directory
+      const documentsDir = new Directory(Paths.document);
 
       // Handle duplicate names
-      let finalPath = newPath;
       let finalName = fileName;
       let counter = 1;
+      let destinationFile = new File(documentsDir, finalName);
 
-      while (true) {
-        const exists = await FileSystem.getInfoAsync(finalPath);
-        if (!exists.exists) break;
-
+      while (destinationFile.exists) {
         const nameWithoutExt = fileName.replace(/\.pdf$/i, "");
         const extension = ".pdf";
         finalName = `${nameWithoutExt}_${counter}${extension}`;
-        finalPath = `${documentsDir}${finalName}`;
+        destinationFile = new File(documentsDir, finalName);
         counter++;
       }
 
-      // Copy the file
-      await FileSystem.copyAsync({
-        from: pdfPath,
-        to: finalPath,
-      });
+      // Copy the file using the new API
+      sourceFile.copy(destinationFile);
 
       // Get updated file info
       const { size: finalRawSize, modificationTime: finalModTime } =
-        await getFileInfoWithSize(finalPath);
+        await getFileInfoWithSize(destinationFile.uri);
 
       // Create PDF item
       const newPdf: PdfItem = {
         id: `pdf_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
         name: finalName,
-        uri: finalPath,
+        uri: destinationFile.uri,
         size: formatFileSize(finalRawSize),
         date: new Date(finalModTime).toLocaleDateString(),
       };
@@ -290,10 +278,15 @@ export const usePdfManagement = () => {
   // Discard PDF without saving
   const discardPdf = (): void => {
     if (pdfToRename) {
-      // Optional: Delete the temporary file
-      deletePdfFile(pdfToRename.uri).catch((error) => {
+      // Delete the temporary file using new API
+      try {
+        const file = new File(pdfToRename.uri);
+        if (file.exists) {
+          file.delete();
+        }
+      } catch (error) {
         console.error("Error discarding PDF:", error);
-      });
+      }
     }
     setPdfToRename(null);
   };

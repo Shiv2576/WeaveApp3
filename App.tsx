@@ -6,14 +6,11 @@ import { TabNavigation } from "./src/components/shared/TabNavigation";
 import Editor from "./src/screens/EditorScreen";
 import Gallery from "./src/screens/GalleryScreen";
 import { TabType } from "./src/types";
+import Header from "./src/components/shared/Header";
 
 const App: React.FC = () => {
   const { currentTab, switchTab } = useTabNavigation("editor");
   const { loadPdfs } = usePdfManagement();
-
-  useEffect(() => {
-    loadPdfs();
-  }, [loadPdfs]);
 
   const handleSwitchToGallery = async () => {
     switchTab("gallery");
@@ -26,8 +23,10 @@ const App: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <Header />
+
       <StatusBar
-        barStyle="dark-content"
+        barStyle="default"
         backgroundColor="#FFFFFF"
         translucent={false}
       />
