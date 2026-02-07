@@ -18,7 +18,7 @@ const Gallery: React.FC<GalleryScreenProps> = ({ onSwitchToEditor }) => {
 
   useEffect(() => {
     loadPdfs();
-  });
+  }, []);
 
   const handleDelete = (pdfUri: string, fileName: string) => {
     Alert.alert(

@@ -49,7 +49,6 @@ const Editor: React.FC<EditorProps> = ({
     handleRenamePdf,
   } = usePdfManagement();
 
-  // ✅ State for modal visibility
   const [renameModalVisible, setRenameModalVisible] = useState(false);
 
   const handleGeneratePdf = async () => {
@@ -121,7 +120,7 @@ const Editor: React.FC<EditorProps> = ({
 
   const handleAddImages = async () => {
     try {
-      await pickImages();
+      const pickedImages = await pickImages();
 
       if (pickedImages && pickedImages.length > 0) {
         const formattedImages = pickedImages.map((img, index) => ({
@@ -132,7 +131,6 @@ const Editor: React.FC<EditorProps> = ({
           fileName: img.fileName || `image_${Date.now()}_${index}.jpg`,
           rotation: 0,
         }));
-
         addImages(formattedImages);
         clearPickedImages([]);
       }
@@ -277,10 +275,10 @@ const Editor: React.FC<EditorProps> = ({
         </View>
       )}
 
-      {/* Generate PDF Button */}
       <View
         style={{
           padding: 16,
+          paddingBottom: 60,
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#E5E7E8",

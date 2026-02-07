@@ -1,6 +1,7 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system/legacy";
+import * as ImageManipulator from "expo-image-manipulator";
 import { EditedImage } from "../types";
 import * as IntentLauncher from "expo-intent-launcher";
 import { Platform } from "react-native";
@@ -8,6 +9,7 @@ import { Platform } from "react-native";
 /**
  * Generate PDF from images
  */
+
 export const generatePdf = async (
   images: EditedImage[],
   pdfName?: string,
@@ -15,56 +17,66 @@ export const generatePdf = async (
   if (images.length === 0) {
     throw new Error("No images to generate PDF");
   }
-
   console.log("Generating PDF with", images.length, "images");
 
   // Convert images to base64
   const base64Images = await Promise.all(
     images.map(async (img) => {
-      if (img.uri.startsWith("data:image/")) {
-        return img.uri;
+      let base64Src = img.uri;
+
+      // Convert to base64 if not already
+      if (!img.uri.startsWith("data:image/")) {
+        const base64 = await FileSystem.readAsStringAsync(img.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        let mimeType = "image/jpeg";
+        if (img.uri.toLowerCase().endsWith(".png")) mimeType = "image/png";
+        if (img.uri.toLowerCase().endsWith(".gif")) mimeType = "image/gif";
+        if (img.uri.toLowerCase().endsWith(".webp")) mimeType = "image/webp";
+        base64Src = `data:${mimeType};base64,${base64}`;
       }
 
-      const base64 = await FileSystem.readAsStringAsync(img.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      let mimeType = "image/jpeg";
-      if (img.uri.toLowerCase().endsWith(".png")) mimeType = "image/png";
-      if (img.uri.toLowerCase().endsWith(".gif")) mimeType = "image/gif";
-      if (img.uri.toLowerCase().endsWith(".webp")) mimeType = "image/webp";
-
-      return `data:${mimeType};base64,${base64}`;
+      // Scale image if needed
+      const scaledSrc = await scaleImageIfNeeded(base64Src, img.uri);
+      return scaledSrc;
     }),
   );
 
   // Create HTML
   const html = `
-    <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body { margin: 0; padding: 20px; }
-          img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto 20px auto;
-            page-break-after: always;
-          }
-          img:last-child { page-break-after: auto; }
-        </style>
-      </head>
-      <body>
-        ${base64Images.map((src) => `<img src="${src}" />`).join("")}
-      </body>
-    </html>
-  `;
+     <html>
+       <head>
+         <meta charset="UTF-8">
+         <style>
+           body {
+             margin: 0;
+             padding: 20px;
+           }
+           img {
+             max-width: 100%;
+             height: auto;
+             display: block;
+             margin: 0 auto 20px auto;
+             page-break-after: always;
+             page-break-inside: avoid;
+           }
+           img:last-child {
+             page-break-after: auto;
+           }
+         </style>
+       </head>
+       <body>
+         ${base64Images.map((src) => `<img src="${src}" />`).join("")}
+       </body>
+     </html>
+   `;
 
   // Generate PDF
   const { uri } = await Print.printToFileAsync({
     html,
     base64: false,
+    width: 612, // 8.5 inches at 72 DPI
+    height: 792, // 11 inches at 72 DPI
   });
 
   // If a name is provided, rename it immediately
@@ -73,6 +85,75 @@ export const generatePdf = async (
   }
 
   return uri;
+};
+
+/**
+ * Scale image if it exceeds PDF page dimensions
+ * Uses Expo ImageManipulator for React Native compatibility
+ */
+const scaleImageIfNeeded = async (
+  base64Src: string,
+  imgUri: string,
+): Promise<string> => {
+  try {
+    const maxWidth = 612; // 8.5 inches at 72 DPI
+    const maxHeight = 792; // 11 inches at 72 DPI
+
+    // Get image dimensions using ImageManipulator
+    const imageResult = await ImageManipulator.manipulateAsync(
+      imgUri,
+      [], // No operations, just to get dimensions
+      { compress: 1, format: ImageManipulator.SaveFormat.JPEG },
+    );
+
+    console.log(`Image dimensions: ${imageResult.width}x${imageResult.height}`);
+
+    // Check if scaling is needed
+    if (imageResult.width <= maxWidth && imageResult.height <= maxHeight) {
+      console.log("Image fits page dimensions, no scaling needed");
+      return base64Src; // Return original
+    }
+
+    // Calculate scaling ratio
+    const ratio = Math.min(
+      maxWidth / imageResult.width,
+      maxHeight / imageResult.height,
+    );
+
+    console.log(`Scaling image by ratio: ${ratio.toFixed(2)}`);
+
+    // Resize and compress
+    const scaledImage = await ImageManipulator.manipulateAsync(
+      imgUri,
+      [
+        {
+          resize: {
+            width: Math.round(imageResult.width * ratio),
+            height: Math.round(imageResult.height * ratio),
+          },
+        },
+      ],
+      { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG },
+    );
+
+    // Read scaled image as base64
+    const scaledBase64 = await FileSystem.readAsStringAsync(scaledImage.uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    // Clean up temporary file
+    try {
+      await FileSystem.deleteAsync(scaledImage.uri, { idempotent: true });
+    } catch (cleanupError) {
+      console.log("Could not delete temp file:", cleanupError);
+    }
+
+    return `data:image/jpeg;base64,${scaledBase64}`;
+  } catch (error) {
+    console.error("Error scaling image:", error);
+    // Return original if scaling fails
+    return base64Src;
+  }
 };
 
 /**
@@ -129,7 +210,7 @@ export const renamePdf = async (
     }
 
     return targetUri;
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Error in renamePdf:", error);
     throw new Error(`Failed to rename PDF: ${error.message}`);
   }

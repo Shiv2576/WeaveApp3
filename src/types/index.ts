@@ -1,7 +1,5 @@
-// Tab Types
 export type TabType = "editor" | "gallery";
 
-// Image Types
 export interface ImageItem {
   id: string;
   uri: string;
@@ -35,6 +33,8 @@ export interface PdfItem {
   uri: string;
   size: string;
   date: string;
+  rawSize?: number;
+  modificationTime?: number;
 }
 
 export interface PdfToRename {

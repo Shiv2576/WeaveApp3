@@ -5,12 +5,11 @@ import { ImageItem } from "../types";
 export const useImagePicker = () => {
   const [images, setImages] = useState<ImageItem[]>([]);
 
-  const pickImages = async () => {
+  const pickImages = async (): Promise<ImageItem[]> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
     if (status !== "granted") {
       alert("Permission to access gallery is required!");
-      return;
+      return [];
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -27,8 +26,15 @@ export const useImagePicker = () => {
         height: asset.height,
         fileName: asset.fileName || "image.jpg",
       }));
+
+      // Update the state
       setImages((prev) => [...prev, ...newImages]);
+
+      // Return the new images immediately
+      return newImages;
     }
+
+    return [];
   };
 
   return { images, pickImages, setImages };
