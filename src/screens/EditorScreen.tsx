@@ -53,13 +53,11 @@ const Editor: React.FC<EditorProps> = ({
 
   const handleGeneratePdf = async () => {
     try {
-      // 1. Generate PDF
       const pdfPath = await generateAndSavePdf(
         images,
         `document_${new Date().toISOString().slice(0, 10)}.pdf`,
       );
 
-      // 2. Show rename modal for user to confirm/change name
       setPdfToRename({
         uri: pdfPath.uri,
         currentName: pdfPath.name,

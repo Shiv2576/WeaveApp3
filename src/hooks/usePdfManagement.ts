@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Alert } from "react-native";
-import * as FileSystem from "expo-file-system/legacy";
-import { PdfItem, PdfToRename } from "../types";
+import { File, Directory, Paths } from "expo-file-system";
+import { ImageItem, PdfItem, PdfToRename } from "../types";
 import {
   sharePdf,
   renamePdf,
@@ -25,15 +25,15 @@ const getFileInfoWithSize = async (
   fileUri: string,
 ): Promise<{ size: number; modificationTime: number }> => {
   try {
-    const fileInfo = await FileSystem.getInfoAsync(fileUri);
+    const file = new File(fileUri);
 
-    if (!fileInfo.exists) {
+    if (!file.exists) {
       return { size: 0, modificationTime: Date.now() };
     }
 
     return {
-      size: fileInfo.size || 0,
-      modificationTime: fileInfo.modificationTime || Date.now(),
+      size: file.size || 0,
+      modificationTime: Date.now(),
     };
   } catch (error) {
     console.error("Error getting file info:", error);
@@ -84,18 +84,17 @@ export const usePdfManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, []); // Empty dependency array - this function doesn't depend on anything
+  }, []);
 
-  // Initialize PDFs on mount
   useEffect(() => {
     if (!isInitialized) {
       loadPdfs();
       setIsInitialized(true);
     }
-  }, [isInitialized, loadPdfs]); // Only run once on mount
+  }, [isInitialized, loadPdfs]);
 
   const generateAndSavePdf = async (
-    images: any[],
+    images: ImageItem[],
     pdfName?: string,
   ): Promise<PdfItem> => {
     try {
@@ -105,17 +104,38 @@ export const usePdfManagement = () => {
       console.log("Images count:", images.length);
       console.log("PDF name:", pdfName);
 
-      // 1. Generate PDF
       console.log("Step 1: Generating PDF...");
       const pdfPath = await generatePdf(images, pdfName);
       console.log("✓ PDF generated at:", pdfPath);
 
-      // 2. Save to storage
-      console.log("Step 2: Saving to storage...");
-      const savedPdf = await savePdfToStorage(pdfPath, pdfName);
-      console.log("✓ PDF saved successfully");
+      // No need to create a new File - generatePdf already saved it
+      console.log("Step 2: Creating PDF record...");
 
-      return savedPdf;
+      // Get file name from path or use provided name
+      const fileName = pdfPath.split("/").pop() || `document_${Date.now()}.pdf`;
+
+      const newPdf: PdfItem = {
+        id: `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: fileName,
+        uri: pdfPath,
+        size: formatFileSize(images.length * 100 * 1024), // Estimate based on images
+        rawSize: images.length * 100 * 1024,
+        date: new Date().toLocaleDateString(),
+      };
+
+      console.log("Step 3: Adding to PDF list...");
+      console.log("PDF details:", {
+        name: newPdf.name,
+        size: newPdf.size,
+        path: newPdf.uri,
+      });
+
+      setPdfs((prev) => [newPdf, ...prev]);
+
+      console.log("✓ PDF added to list successfully");
+      console.log("Total PDFs now:", pdfs.length + 1);
+
+      return newPdf;
     } catch (error) {
       console.error("=== Error generating and saving PDF ===");
       console.error("Error:", error);
@@ -129,98 +149,6 @@ export const usePdfManagement = () => {
     }
   };
 
-  // Save PDF to app's storage (add to the list)
-  const savePdfToStorage = async (
-    pdfPath: string,
-    pdfName?: string,
-  ): Promise<PdfItem> => {
-    try {
-      console.log("Saving PDF to storage from:", pdfPath);
-
-      // Check if source file exists
-      const sourceFileInfo = await FileSystem.getInfoAsync(pdfPath);
-      if (!sourceFileInfo.exists) {
-        throw new Error("PDF file not found at source location");
-      }
-
-      console.log("Source file size:", sourceFileInfo.size, "bytes");
-
-      // Get file info with size
-      const { size: rawSize, modificationTime } =
-        await getFileInfoWithSize(pdfPath);
-
-      if (rawSize === 0) {
-        throw new Error("PDF file is empty");
-      }
-
-      // Create a unique name if not provided
-      const timestamp = Date.now();
-      const fileName = pdfName || `document_${timestamp}.pdf`;
-
-      // Get the document directory
-      const docDir = FileSystem.documentDirectory;
-      if (!docDir) {
-        throw new Error("Cannot access document directory");
-      }
-
-      const destinationUri = `${docDir}${fileName}`;
-
-      // Check if file already exists
-      let finalUri = destinationUri;
-      let counter = 1;
-      let fileExists = await FileSystem.getInfoAsync(finalUri);
-
-      while (fileExists.exists) {
-        const nameWithoutExt = fileName.replace(/\.pdf$/i, "");
-        const newName = `${nameWithoutExt}_${counter}.pdf`;
-        finalUri = `${docDir}${newName}`;
-        fileExists = await FileSystem.getInfoAsync(finalUri);
-        counter++;
-      }
-
-      console.log("Copying to:", finalUri);
-
-      // Copy the file
-      await FileSystem.copyAsync({
-        from: pdfPath,
-        to: finalUri,
-      });
-
-      console.log("File copied successfully");
-
-      // Get updated file info
-      const { size: finalRawSize, modificationTime: finalModTime } =
-        await getFileInfoWithSize(finalUri);
-
-      // Extract filename from final URI
-      const finalFileName = finalUri.split("/").pop() || fileName;
-
-      // Create PDF item
-      const newPdf: PdfItem = {
-        id: `pdf_${timestamp}_${Math.random().toString(36).substr(2, 9)}`,
-        name: finalFileName,
-        uri: finalUri,
-        size: formatFileSize(finalRawSize),
-        rawSize: finalRawSize,
-        date: new Date(finalModTime).toLocaleDateString(),
-        modificationTime: finalModTime,
-      };
-
-      console.log("New PDF item created:", newPdf);
-
-      // Add to the list
-      setPdfs((prev) => [newPdf, ...prev]);
-
-      return newPdf;
-    } catch (error) {
-      console.error("Error saving PDF to storage:", error);
-      throw new Error(
-        `Failed to save PDF: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  };
-
-  // Rename/save PDF with custom name
   const handleRenamePdf = async (
     newName: string,
   ): Promise<{ newUri: string; newName: string }> => {
@@ -319,12 +247,14 @@ export const usePdfManagement = () => {
   // Discard PDF without saving
   const discardPdf = (): void => {
     if (pdfToRename) {
-      // Delete the temporary file
-      FileSystem.deleteAsync(pdfToRename.uri, { idempotent: true }).catch(
-        (error) => {
-          console.error("Error discarding PDF:", error);
-        },
-      );
+      try {
+        const file = new File(pdfToRename.uri);
+        if (file.exists) {
+          file.delete();
+        }
+      } catch (error) {
+        console.error("Error discarding PDF:", error);
+      }
     }
     setPdfToRename(null);
   };
@@ -355,7 +285,6 @@ export const usePdfManagement = () => {
     // Actions
     loadPdfs,
     generateAndSavePdf,
-    savePdfToStorage,
     handleRenamePdf,
     handleOpenPdf,
     handleSharePdf,
