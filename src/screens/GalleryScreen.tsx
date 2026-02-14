@@ -20,45 +20,6 @@ const Gallery: React.FC<GalleryScreenProps> = ({ onSwitchToEditor }) => {
     loadPdfs();
   }, []);
 
-  const handleDelete = (pdfUri: string, fileName: string) => {
-    Alert.alert(
-      "Delete PDF",
-      `Are you sure you want to delete "${fileName}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await handleDeletePdf(pdfUri, fileName);
-              loadPdfs(); // ✅ Reload after delete
-              Alert.alert("Success", "PDF deleted successfully");
-            } catch (error: any) {
-              Alert.alert("Error", error.message || "Failed to delete PDF");
-            }
-          },
-        },
-      ],
-    );
-  };
-
-  const handleOpen = async (pdfUri: string, fileName: string) => {
-    try {
-      await handleOpenPdf(pdfUri, fileName);
-    } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to open PDF");
-    }
-  };
-
-  const handleShare = async (pdfUri: string, fileName: string) => {
-    try {
-      await handleSharePdf(pdfUri, fileName);
-    } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to share PDF");
-    }
-  };
-
   const handlePdfOpen = async (pdf: PdfItem) => {
     await handleOpenPdf(pdf.uri, pdf.name);
   };

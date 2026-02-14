@@ -70,19 +70,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderRadius: Theme.Spacing.borderRadiusMD,
-    paddingVertical: Theme.Spacing.md - 2, // Slightly tighter vertical padding
+    paddingVertical: Theme.Spacing.md - 2,
     paddingHorizontal: Theme.Spacing.lg,
     marginHorizontal: Theme.Spacing.md,
     marginVertical: Theme.Spacing.sm,
-    ...Theme.Shadows.xs, // Subtler shadow than GeneratePdfButton
+    ...Theme.Shadows.xs,
   },
   content: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Theme.Spacing.sm - 2, // Tighter icon-text spacing
+    gap: Theme.Spacing.sm - 2,
   },
   text: {
-    fontSize: Theme.Typography.fontSize.base - 1, // 13px for refined scale
+    fontSize: Theme.Typography.fontSize.base - 1,
     fontWeight: Theme.Typography.fontWeight.semibold,
     letterSpacing: 0.25,
   },

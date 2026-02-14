@@ -27,71 +27,88 @@ const GalleryHeader: React.FC<GalleryHeaderProps> = ({
   refreshing = false,
 }) => {
   return (
-    <View style={styles.container}>
-      {/* Left side: Title and subtitle */}
-      <View style={styles.titleSection}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-      </View>
-
-      {/* Right side: Count and refresh button */}
-      <View style={styles.rightSection}>
-        {/* Count badge - only show if count > 0 */}
-        {count > 0 && (
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{count}</Text>
-          </View>
-        )}
-
-        {/* Refresh Button */}
-        {onRefresh && (
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              (loading || refreshing) && styles.actionButtonDisabled,
-            ]}
-            onPress={onRefresh}
-            disabled={loading || refreshing}
-          >
-            {refreshing ? (
-              <ActivityIndicator size="small" color={Theme.Colors.primary} />
-            ) : (
-              <Ionicons
-                name="refresh"
-                size={20}
-                color={loading ? Theme.Colors.textMuted : Theme.Colors.primary}
-              />
-            )}
-          </TouchableOpacity>
-        )}
+    <View style={styles.wrapper}>
+      <View style={styles.container}>
+        {/* Left side: Title and subtitle */}
+        <View style={styles.titleSection}>
+          <Text style={styles.title}>{title}</Text>
+          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        </View>
+        {/* Right side: Count and refresh button */}
+        <View style={styles.rightSection}>
+          {/* Count badge - only show if count > 0 */}
+          {count > 0 && (
+            <View style={styles.countBadge}>
+              <Text style={styles.countText}>{count}</Text>
+            </View>
+          )}
+          {/* Refresh Button */}
+          {onRefresh && (
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                (loading || refreshing) && styles.actionButtonDisabled,
+              ]}
+              onPress={onRefresh}
+              disabled={loading || refreshing}
+            >
+              {refreshing ? (
+                <ActivityIndicator size="small" color={Theme.Colors.primary} />
+              ) : (
+                <Ionicons
+                  name="refresh"
+                  size={20}
+                  color={
+                    loading ? Theme.Colors.textMuted : Theme.Colors.primary
+                  }
+                />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flexDirection: "row",
+    paddingHorizontal: 0,
+    paddingVertical: 25,
+    marginVertical: -25,
+    marginHorizontal: -20,
+    backgroundColor: Theme.Colors.background,
+  },
   container: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: Theme.Colors.surface,
-    paddingHorizontal: Theme.Spacing.screenPadding,
+    paddingHorizontal: Theme.Spacing.lg,
     paddingVertical: Theme.Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.Colors.border,
+    borderWidth: 0.8,
+    borderColor: "#B8C1C7",
+    borderRadius: Theme.Spacing.borderRadiusMD,
   },
   titleSection: {
     flex: 1,
   },
   title: {
-    fontSize: Theme.Typography.fontSize.xl,
-    fontWeight: Theme.Typography.fontWeight.bold,
-    color: Theme.Colors.textPrimary,
+    fontSize: Theme.Typography.fontSize.base,
+    fontWeight: Theme.Typography.fontWeight.semibold,
+    fontFamily: "serif",
+    color: "#fffff",
+    letterSpacing: 0.25,
     marginBottom: 2,
   },
   subtitle: {
-    fontSize: Theme.Typography.fontSize.sm,
-    color: Theme.Colors.textMuted,
+    fontSize: Theme.Typography.fontSize.sm - 1,
+    fontWeight: Theme.Typography.fontWeight.regular,
+    fontFamily: "serif",
+    color: "#fffff",
+    letterSpacing: 0.25,
   },
   rightSection: {
     flexDirection: "row",
@@ -101,16 +118,18 @@ const styles = StyleSheet.create({
   countBadge: {
     backgroundColor: Theme.Colors.primary,
     paddingHorizontal: Theme.Spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: Theme.Spacing.xs,
     borderRadius: Theme.Spacing.borderRadiusRound,
-    minWidth: 28,
+    minWidth: 32,
     alignItems: "center",
     justifyContent: "center",
   },
   countText: {
-    color: Theme.Colors.textLight,
     fontSize: Theme.Typography.fontSize.sm,
-    fontWeight: Theme.Typography.fontWeight.bold,
+    fontWeight: Theme.Typography.fontWeight.semibold,
+    fontFamily: "serif",
+    color: "#9CA5AB",
+    letterSpacing: 0.25,
   },
   actionButton: {
     width: 40,
@@ -119,12 +138,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Theme.Colors.background,
-    borderWidth: 1,
-    borderColor: Theme.Colors.border,
+    borderWidth: 0.8,
+    borderColor: "#B8C1C7",
   },
   actionButtonDisabled: {
     opacity: 0.5,
-    borderColor: Theme.Colors.borderLight,
+    borderColor: "#D0D6DB",
   },
 });
 

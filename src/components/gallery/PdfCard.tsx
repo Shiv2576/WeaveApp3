@@ -18,60 +18,53 @@ const PdfCard: React.FC<PdfCardProps> = ({
   onDelete,
 }) => {
   return (
-    <View style={styles.container}>
+    <TouchableOpacity
+      style={styles.container}
+      onPress={() => onOpen(pdf.uri, pdf.name)}
+      activeOpacity={0.7}
+    >
       {/* PDF Icon */}
       <View style={styles.iconContainer}>
-        <Ionicons name="document-text" size={32} color={Theme.Colors.error} />
+        <Ionicons name="document-text" size={24} color="#4A5A6A" />
       </View>
 
-      {/* PDF Info */}
+      {/* PDF Info - Takes remaining space */}
       <View style={styles.infoContainer}>
         <Text style={styles.name} numberOfLines={1}>
           {pdf.name}
         </Text>
         <Text style={styles.meta}>
-          {pdf.size} • Created: {pdf.date}
+          {pdf.size} • {pdf.date}
         </Text>
-        {/* Optional: Show raw size for debugging */}
-        {/* <Text style={styles.debugMeta}>
-          ID: {pdf.id.substring(0, 8)}... • Modified: {new Date(pdf.modificationTime).toLocaleTimeString()}
-        </Text> */}
       </View>
 
-      {/* Actions */}
+      {/* Actions - Fixed width */}
       <View style={styles.actionsContainer}>
-        {/* Open/View */}
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => onOpen(pdf.uri, pdf.name)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="eye-outline" size={22} color={Theme.Colors.info} />
-        </TouchableOpacity>
-
         {/* Share */}
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => onShare(pdf.uri, pdf.name)}
+          onPress={(e) => {
+            e.stopPropagation();
+            onShare(pdf.uri, pdf.name);
+          }}
           activeOpacity={0.7}
         >
-          <Ionicons
-            name="share-outline"
-            size={22}
-            color={Theme.Colors.success}
-          />
+          <Ionicons name="share-outline" size={18} color="#4A5A6A" />
         </TouchableOpacity>
 
         {/* Delete */}
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => onDelete(pdf.uri, pdf.name)}
+          onPress={(e) => {
+            e.stopPropagation();
+            onDelete(pdf.uri, pdf.name);
+          }}
           activeOpacity={0.7}
         >
-          <Ionicons name="trash-outline" size={22} color={Theme.Colors.error} />
+          <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -79,44 +72,56 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Theme.Colors.surface,
-    borderRadius: Theme.Spacing.borderRadiusMD,
-    padding: Theme.Spacing.md,
-    marginBottom: Theme.Spacing.sm,
-    borderWidth: 1,
-    borderColor: Theme.Colors.border,
-    ...Theme.Shadows.sm,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginHorizontal: 0,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 3,
+    borderWidth: 0,
   },
   iconContainer: {
-    marginRight: Theme.Spacing.md,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "#F0F4F8",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
   },
   infoContainer: {
     flex: 1,
+    marginRight: 12,
   },
   name: {
-    fontSize: Theme.Typography.fontSize.base,
-    fontWeight: Theme.Typography.fontWeight.semibold,
-    color: Theme.Colors.textPrimary,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1A2634",
     marginBottom: 4,
   },
   meta: {
-    fontSize: Theme.Typography.fontSize.xs,
-    color: Theme.Colors.textMuted,
-  },
-  debugMeta: {
-    fontSize: Theme.Typography.fontSize.xxs,
-    color: Theme.Colors.textDisabled,
-    marginTop: 2,
-    fontFamily: "monospace",
+    fontSize: 12,
+    color: "#7E8C9A",
   },
   actionsContainer: {
     flexDirection: "row",
-    gap: Theme.Spacing.sm,
+    gap: 8,
   },
   actionButton: {
-    padding: Theme.Spacing.xs,
-    borderRadius: Theme.Spacing.borderRadiusSM,
-    backgroundColor: Theme.Colors.background,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F5F7FA",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 
